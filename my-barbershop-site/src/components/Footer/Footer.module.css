@@ -1,0 +1,145 @@
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    flex-wrap: wrap; 
+}
+
+.logoSection {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    margin-left: 25px;
+    justify-content: flex-start;
+    font: 700 24px/1 'Lexend', sans-serif;
+    color: #d07718;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+.logo {
+    width: 80px;
+    height: 80px;
+    margin-right: 10px;
+}
+
+.brandName {
+    text-shadow: 3px 4px 3px rgba(214, 88, 15, 0.474);
+    width: auto;
+    margin: auto 0;
+}
+
+.infoSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center; 
+    margin: 0 auto; 
+    margin-top: 20px;
+}
+
+.infoItem {
+    margin-bottom: 10px;
+}
+
+.infoText {
+    font-size: 16px;
+    color: #333;
+    font-family: 'Mulish', sans-serif;
+    font-weight: bold;
+    text-align: center; 
+}
+
+.contactSection {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-top: 20px;
+}
+
+.contactItem {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.icon {
+    width: 20px;
+    height: 20px;
+    background-size: cover;
+    margin-right: 8px;
+}
+
+.phoneIcon {
+    background-image: url('../../images/phone.png');
+}
+
+.clockIcon {
+    background-image: url('../../images/clock.png');
+}
+
+.contactText {
+    font-size: 16px;
+    font-weight: bold;
+    margin-right: 0;
+    color: #333;
+    font-family: 'Mulish', sans-serif;
+}
+
+@media (max-width: 991px) {
+    .footer {
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .logoSection {
+        margin: 0;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .logo {
+        width: 60px; 
+        height: 60px;
+    }
+
+    .brandName {
+        font-size: 24px; 
+        margin: 10px 0;
+    }
+
+    .infoSection {
+        margin: 20px 0;
+    }
+
+    .infoText {
+        font-size: 14px;
+    }
+
+    .contactSection {
+        align-items: center;
+        margin-top: 20px;
+    }
+
+    .contactText {
+        font-size: 14px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 575px) {
+    .logo {
+        width: 50px;
+        height: 50px;
+    }
+
+    .brandName {
+        font-size: 20px;
+    }
+
+    .infoText, .contactText {
+        font-size: 12px;
+    }
+}

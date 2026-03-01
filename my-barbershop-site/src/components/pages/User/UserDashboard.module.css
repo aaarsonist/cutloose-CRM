@@ -1,0 +1,211 @@
+.dashboard {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h2 {
+    text-align: center;
+    color: #333333;
+    font: 600 48px/1 'Mulish', sans-serif;
+    line-height: 1.2;
+}
+
+h3 {
+    text-align: center;
+    color: #333;
+    font: 600 30px/1 'Mulish', sans-serif;
+    line-height: 1.2;
+}
+
+.bookingSection, .reviewSection {
+    margin-top: 20px;
+}
+
+select, input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+}
+
+.button1 {
+    display: block; 
+    margin: 20px auto 0; 
+    border-radius: 15px;
+    background: linear-gradient(135deg, rgb(221, 189, 13) 0%, rgb(222, 89, 1) 100%);
+    box-shadow: 0 0 20px rgba(254, 91, 20, 0.4);
+    cursor: pointer;
+    padding: 0 34px;
+    font: 600 16px/56px 'Mulish', sans-serif;
+    color: #fff;
+    border: none;
+}
+
+textarea {
+    height: 100px;
+    resize: none;
+}
+
+.button1:hover {
+    box-shadow: 0 0 25px rgba(254, 91, 20, 0.6);
+}
+
+.ratingInput {
+    margin-bottom: 15px;
+    align-items: center; 
+}
+
+.ratingInput label {
+    margin-right: 10px;
+    font: 600 18px/1 'Mulish', sans-serif;
+}
+
+.starRating {
+    display: inline-block; 
+}
+
+.star {
+    font-size: 24px; 
+    margin-right: 2px; 
+    cursor: pointer;
+    color: gray;
+    transition: color 0.2s ease-in-out; 
+}
+
+.star:last-child {
+    margin-right: 0; 
+}
+
+.upcomingAppointmentsSection {
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+.appointmentList {
+    list-style-type: none;
+    padding: 0;
+}
+
+.appointmentItem {
+    font-family: 'Mulish', sans-serif;
+    font-size: 16px;
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.appointmentDetails {
+    text-align: left;
+    flex-grow: 1;
+}
+
+.appointmentDetails span {
+    display: block;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.appointmentDetails span:first-child {
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.cancelButton {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 15px;
+    cursor: pointer;
+    font: 600 14px/1 'Mulish', sans-serif;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: background-color 0.2s ease;
+}
+
+.cancelButton:hover {
+    background: #c0392b;
+}
+
+.slotsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fdfdfd;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.slotButton {
+  font-family: 'Mulish', sans-serif;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+  font-size: 14px;
+}
+
+.slotButton:hover {
+  background-color: #e0e0e0;
+  border-color: #bbb;
+}
+
+/* Стиль для ВЫБРАННОГО слота */
+.slotButton.selectedSlot {
+  background-color: rgb(222, 89, 1);
+  color: white;
+  border-color: rgb(222, 89, 1);
+  font-weight: bold;
+}
+/* Стили для кнопок в toast-подтверждении */
+.confirmationToastBody {
+    background-color: #ffffff !important; 
+    color: #333 !important; 
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    padding: 15px !important;
+}
+.toastConfirmButton, 
+.toastCancelButton {
+  padding: 8px 15px; 
+  border: none;
+  border-radius: 5px;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 5px;
+  font-size: 1rem; 
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.toastConfirmButton {
+  background-color: #ff8c00; 
+}
+.toastConfirmButton:hover {
+  background-color: #e67e00; 
+}
+
+.toastCancelButton {
+  background-color: #f0f0f0; 
+  color: #333;
+  border: 1px solid #ccc;
+}
+.toastCancelButton:hover {
+  background-color: #e0e0e0;
+}

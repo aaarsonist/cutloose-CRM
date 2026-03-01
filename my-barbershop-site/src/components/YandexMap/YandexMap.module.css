@@ -1,0 +1,17 @@
+.yandexMapContainer {
+    width: 90%; 
+    max-width: none; 
+    align-items: center;
+    height: 400px;
+    margin: 40px auto; 
+    border: 1px solid #ccc; 
+    border-radius: 8px; 
+  }
+
+  @media (max-width: 768px) {
+    .yandexMapContainer {
+      width: 85%; 
+      height: 300px; 
+      margin: 20px auto; 
+    }
+  }

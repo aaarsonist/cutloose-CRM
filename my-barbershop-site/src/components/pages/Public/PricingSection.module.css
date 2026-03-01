@@ -1,0 +1,160 @@
+.pricingSection {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.sectionTitle {
+  margin-left: 80px;
+  color: #333333;
+  align-self: flex-start;
+  font: 600 48px/1 'Mulish', sans-serif;
+  line-height: 1.2;
+}
+
+@media (max-width: 1199px) {
+  .sectionTitle {
+    font-size: 32px; 
+    line-height: 1.4; 
+    align-self: center; 
+    margin-left: -1px;
+  }
+}
+
+.pricingContainer {
+  display: flex;
+  margin-top: 30px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+@media (max-width: 1199px) {
+  .pricingContainer {
+    align-self: center;
+    flex-direction: column;
+    display: flex;
+    margin-top: 20px;
+  }
+}
+
+.imageColumn {
+  width: 40%; 
+  display: flex;
+  justify-content: center; 
+}
+
+.serviceColumn {
+  width: 60%;
+  display: flex;
+  flex-direction: row;
+  margin-left: 0; 
+  padding-left: 40px; 
+}
+
+.serviceImage {
+  width: 100%;
+  object-fit: contain;
+  object-position: center;
+  max-height: 500px; 
+}
+
+
+@media (max-width: 1199px) {
+  .imageColumn {
+    align-self: center;
+    width: 100%;
+  }
+  .serviceColumn {
+    width: 100%;
+    display: flex ;
+    align-self: center;
+    margin-left: 0;
+  }
+}
+
+.serviceList {
+  list-style: none;
+  padding: 0;
+  color: #333;
+  font: 500 18px/48px 'Mulish', sans-serif;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr; 
+  column-gap: 40px; 
+  row-gap: 0px;    
+}
+
+.serviceItem {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 400px;
+  max-width: 100%; 
+  margin: 0; 
+  text-align: left;
+}
+
+.serviceName {
+  flex: 1;
+  text-align: left;
+}
+
+.servicePrice {
+  flex-shrink: 0;
+  text-align: right;
+  padding-left: 15px;
+}
+
+@media (max-width: 1199px) {
+  .pricingContainer {
+    align-self: center;
+    flex-direction: column;
+    display: flex;
+    margin-top: 20px;
+  }
+
+  .imageColumn {
+    width: 100%;
+    margin-bottom: 20px; 
+  }
+
+  .serviceColumn {
+    width: 100%;
+    margin-left: 0;
+    padding-left: 0;
+  }
+
+  .serviceList {
+    grid-template-columns: 1fr; 
+  }
+  .serviceItem {
+    justify-content: space-between;
+    width: 100%;
+    align-self: center;
+  }
+}
+
+.bookButton {
+  border-radius: 15px;
+  background: linear-gradient(135deg, rgb(221, 189, 13) 0%, rgb(222, 89, 1) 100%);
+  box-shadow: 0 0 20px rgba(254, 91, 20, 0.4);
+  margin-top: -10px;
+  margin-left: 370px;
+  cursor: pointer;
+  padding: 0 34px;
+  font: 600 16px/56px 'Mulish', sans-serif;
+  color: #fff;
+  border: none;
+}
+
+.bookButton:hover {
+  box-shadow: 0 0 25px rgba(254, 91, 20, 0.6);
+}
+
+@media (max-width: 1199px) {
+  .bookButton {
+    padding: 0 20px;
+    margin-left: 0;
+    align-self: center;
+  }
+}

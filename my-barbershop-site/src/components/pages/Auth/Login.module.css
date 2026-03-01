@@ -1,0 +1,58 @@
+.App {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 300px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.title {
+    margin-bottom: 20px;
+    text-align: center;
+    color: #333333;
+    font: 600 48px/1 'Mulish', sans-serif;
+    line-height: 1.2;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-size: 1em;
+}
+
+input[type="submit"] {
+    width: auto;
+    border-radius: 15px;
+    background: linear-gradient(135deg, rgb(221, 189, 13) 0%, rgb(222, 89, 1) 100%);
+    box-shadow: 0 0 20px rgba(254, 91, 20, 0.4);
+    cursor: pointer;
+    padding: 0 34px;
+    font: 600 16px/56px 'Mulish', sans-serif;
+    color: #fff;
+    border: none;
+}
+
+input:hover {
+    box-shadow: 0 0 25px rgba(254, 91, 20, 0.6);
+}
+
+span {
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+
+p {
+    text-align: center;
+    margin-top: 20px;
+}
+
+a {
+    text-decoration: none;
+    font-weight: bold;
+}

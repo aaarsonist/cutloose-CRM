@@ -1,0 +1,139 @@
+.header {
+    max-width: none !important;
+  }
+  
+  .container {
+    border-radius: 0;
+  }
+  
+  .wrapper {
+    gap: 20px;
+    display: flex;
+  }
+  
+  @media (max-width: 991px) {
+    .wrapper {
+      flex-direction: column;
+      align-items: center;
+      gap: 5;
+    }
+  }
+  
+  .logoSection {
+    display: flex;
+    flex-direction: column;
+    line-height: normal;
+    width: 100%;
+    margin-left: 55px;
+  }
+  
+  @media (max-width: 991px) {
+    .logoSection {
+      align-items: center;
+      width: 100%;
+    }
+  }
+  
+  .logoWrapper {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    justify-content: flex-start;
+    font: 700 48px/1 'Lexend', sans-serif;
+    color: #d07718;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  @media (max-width: 991px) {
+    .logoWrapper {
+      margin-top: 0px;
+      font-size: 40px;
+      white-space: initial;
+      justify-content: center;
+    }
+  }
+  
+  .logo {
+    aspect-ratio: 1;
+    object-fit: contain;
+    object-position: center;
+    width: 118px;
+    align-self: stretch;
+    margin: auto 1;
+  }
+  
+  .brandName {
+    text-shadow: 3px 4px 3px rgba(214, 88, 15, 0.474);
+    align-self: stretch;
+    width: 250px;
+    margin: auto 0;
+  }
+  
+  @media (max-width: 991px) {
+    .brandName {
+      font-size: 40px;
+      text-align: center;
+    }
+  }
+  
+  .navSection {
+    display: flex;
+    flex-direction: column;
+    line-height: normal;
+    width: 100%;
+    margin-left: 50px;
+  }
+  
+  @media (max-width: 991px) {
+    .navSection {
+      align-items: center;
+      width: 100%;
+    }
+  }
+  
+  .navList {
+    display: flex; 
+    gap: 40px; 
+    align-self: stretch; 
+    color: #333333; 
+    flex-wrap: wrap; 
+    margin: auto 0; 
+    font: 550 16px/56px 'Mulish', sans-serif; 
+    list-style: none; 
+    padding: 0; 
+}
+
+.navList a {
+    text-decoration: none; 
+    color: inherit; 
+}
+
+@media (max-width: 991px) {
+    .navList {
+      max-width: 100%; 
+      margin-top: 0px;
+      justify-content: center; 
+      gap: 20px; 
+    }
+}
+  
+  .navItem {
+    text-align: center;
+  }
+  
+  .bookingButton {
+    z-index: 10; 
+    border-radius: 15px; 
+    background: linear-gradient(135deg, rgb(221, 189, 13) 0%, rgb(222, 89, 1) 100%);
+    box-shadow: 0 0 20px rgba(254, 91, 20, 0.4);
+    color: #fff; 
+    padding: 15px 30px; 
+    border: none;
+    cursor: pointer; 
+    font: 600 16px/1 'Mulish', sans-serif;
+    margin-left: 0px; 
+}
+
+.bookingButton:hover {
+  box-shadow: 0 0 25px rgba(254, 91, 20, 0.6);
+}
