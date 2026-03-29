@@ -36,6 +36,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/timetable/user/completed").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/timetable").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/timetable").authenticated()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.GET, "/api/reports/performance").hasRole("ADMIN")
                         .anyRequest().authenticated()

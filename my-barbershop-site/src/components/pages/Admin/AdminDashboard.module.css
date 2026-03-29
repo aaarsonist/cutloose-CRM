@@ -920,3 +920,29 @@
   border-bottom: 2px solid #f0a500;
   padding-bottom: 10px;
 }
+/* 6. РАЗДЕЛ АНАЛИТИКИ КЛИЕНТОВ (AdminCustomerAnalytics.jsx) */
+
+.customDateInput {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.customDateInput:focus {
+  outline: none;
+  border-color: #f0a500;
+  box-shadow: 0 0 0 2px rgba(240, 165, 0, 0.2);
+}
+
+.trendPositive {
+  color: #16a34a; /* Зеленый цвет для роста */
+  font-weight: bold;
+}
+
+.trendNegative {
+  color: #dc2626; /* Красный цвет для падения */
+  font-weight: bold;
+}

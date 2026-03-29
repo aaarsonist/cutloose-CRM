@@ -139,4 +139,8 @@ public interface TimetableRepository extends JpaRepository<Timetable, Long> {
     boolean existsByMasterIdAndStatusAndAppointmentTimeAfter(Long masterId, BookingStatus status, LocalDateTime time);
     List<Timetable> findByMasterIdAndStatusAndAppointmentTimeAfter(Long masterId, BookingStatus status, LocalDateTime time);
     boolean existsByServiceId(Long serviceId);
+
+    // --- Аналитика Клиентов ---
+    @Query("SELECT t FROM Timetable t WHERE t.status = 'COMPLETED' AND t.appointmentTime >= :startDate AND t.appointmentTime <= :endDate ORDER BY t.appointmentTime ASC")
+    java.util.List<Timetable> findAllCompletedInPeriod(@Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate);
 }
