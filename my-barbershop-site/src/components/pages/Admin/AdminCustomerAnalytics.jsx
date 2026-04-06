@@ -6,7 +6,7 @@ import 'rc-slider/assets/index.css';
 
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { Doughnut, Line } from 'react-chartjs-2';
-import ClientActionModal from './ClientActionModal'; // <-- ИМПОРТИРУЕМ МОДАЛКУ
+import ClientActionModal from './ClientActionModal';
 
 ChartJS.register( CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend );
 
@@ -18,20 +18,26 @@ const toInputFormat = (date) => (!date || isNaN(date.getTime())) ? new Date().to
 const toLabelFormat = (timestamp) => (timestamp === null || timestamp === undefined) ? "" : new Date(timestamp).toLocaleDateString('ru-RU');
 
 const AdminCustomerAnalytics = () => {
+    // --- СТЕЙТЫ ФИЛЬТРОВ И KPI ---
     const [sliderValues, setSliderValues] = useState([ONE_MONTH_AGO_TS, TODAY_TS]);
     const [startDate, setStartDate] = useState(toInputFormat(new Date(ONE_MONTH_AGO_TS))); 
     const [endDate, setEndDate] = useState(toInputFormat(new Date(TODAY_TS))); 
     
     const [kpiData, setKpiData] = useState(null);
     const [loadingKpi, setLoadingKpi] = useState(false);
-    
+    const [error, setError] = useState(null);
+
+    // --- СТЕЙТЫ ТАБЛИЦЫ РИСКА И ИСТОРИИ ВЗАИМОДЕЙСТВИЙ ---
     const [atRiskClients, setAtRiskClients] = useState([]);
     const [loadingTable, setLoadingTable] = useState(false);
-    const [error, setError] = useState(null);
+    
+    const [interactions, setInteractions] = useState([]);
+    const [loadingInteractions, setLoadingInteractions] = useState(false);
 
     // Стейт для управления модальным окном
     const [selectedClientId, setSelectedClientId] = useState(null);
 
+    // --- ЗАГРУЗКА ДАННЫХ ---
     const loadKpiData = useCallback(async () => {
         try {
             setLoadingKpi(true); setError(null);
@@ -56,8 +62,22 @@ const AdminCustomerAnalytics = () => {
         }
     }, []);
 
+    const loadInteractions = useCallback(async () => {
+        try {
+            setLoadingInteractions(true);
+            const response = await api.get('/api/admin/customer-analytics/interactions');
+            setInteractions(response.data);
+        } catch (err) {
+            console.error("Ошибка при загрузке истории взаимодействий:", err);
+        } finally {
+            setLoadingInteractions(false);
+        }
+    }, []);
+
+    // --- ЭФФЕКТЫ ---
     useEffect(() => { loadKpiData(); }, [loadKpiData]);
     useEffect(() => { loadAtRiskTable(); }, [loadAtRiskTable]);
+    useEffect(() => { loadInteractions(); }, [loadInteractions]);
 
     const handleSliderStop = (values) => {
         if (!values || typeof values[0] !== 'number' || typeof values[1] !== 'number') return;
@@ -68,7 +88,7 @@ const AdminCustomerAnalytics = () => {
     const calculateTrend = (current, previous) => {
         if (!previous || previous === 0) return { value: 0, isPositive: true };
         const percent = ((current - previous) / previous) * 100;
-        return { value: percent.toFixed(1), isPositive: current - previous >= 0 };
+        return { value: percent.toFixed(1), isPositive: current - previous <= 0 }; // Для Churn Rate падение — это хорошо (зеленый)
     };
 
     const getSegmentationData = () => {
@@ -88,7 +108,7 @@ const AdminCustomerAnalytics = () => {
             labels: kpiData.dynamicsDates.map(d => new Date(d).toLocaleDateString('ru-RU', {day:'numeric', month:'short'})),
             datasets: [
                 { label: 'Средний LTV (BYN)', data: kpiData.dynamicsLtv, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', yAxisID: 'y', tension: 0.4, fill: true },
-                { label: 'Зона риска (%)', data: kpiData.dynamicsChurnRate, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', yAxisID: 'y1', tension: 0.4, fill: true }
+                { label: 'Отток (%)', data: kpiData.dynamicsChurnRate, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', yAxisID: 'y1', tension: 0.4, fill: true }
             ]
         };
     };
@@ -98,12 +118,13 @@ const AdminCustomerAnalytics = () => {
         scales: {
             x: { grid: { display: false } },
             y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'LTV (BYN)' }, beginAtZero: true },
-            y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Зона риска (%)' }, grid: { drawOnChartArea: false }, beginAtZero: true, max: 100 }
+            y1: { type: 'linear', display: true, position: 'right', title: { display: true, text: 'Отток (%)' }, grid: { drawOnChartArea: false }, beginAtZero: true, max: 100 }
         }
     };
 
     return (
         <div className={styles.analyticsPage}>
+
 
             <div className={styles.dateSliderBar}>
                 <span className={styles.sliderLabel}>{toLabelFormat(sliderValues[0])}</span>
@@ -129,21 +150,21 @@ const AdminCustomerAnalytics = () => {
                                     return (
                                         <span className={trend.isPositive ? styles.trendPositive : styles.trendNegative}>
                                             {trend.isPositive ? '▲' : '▼'} {Math.abs(trend.value)}% 
-                                            <span style={{ color: '#777', fontWeight: 'normal', marginLeft: '5px' }}>к предыдущему периоду</span>
+                                            <span style={{ color: '#777', fontWeight: 'normal', marginLeft: '5px' }}>к прошлому периоду</span>
                                         </span>
                                     );
                                 })()}
                             </div>
                         </div>
                         <div className={styles.kpiCard}>
-                            <h4>Клиентов в зоне риска</h4>
-                            <div className={styles.kpiValue} style={{ color: '#dc2626' }}>{kpiData.clientsAtRisk} <span style={{fontSize: '1.2rem'}}>чел.</span></div>
-                            <div className={styles.kpiSubtext}>Не посещали салон более 60 дней</div>
+                            <h4>Отток клиентов (Churn Rate)</h4>
+                            <div className={styles.kpiValue} style={{ color: '#ef4444' }}>{kpiData.churnRate}%</div>
+                            <div className={styles.kpiSubtext}>*Ушедшие клиенты от активной базы на начало периода</div>
                         </div>
                         <div className={styles.kpiCard}>
-                            <h4>Удержанная выручка</h4>
-                            <div className={styles.kpiValue} style={{ color: '#16a34a' }}>{kpiData.retainedRevenue} BYN</div>
-                            <div className={styles.kpiSubtext}>Выручка от вернувшихся (пауза {'>'}60 дней)</div>
+                            <h4>Клиентов в зоне риска</h4>
+                            <div className={styles.kpiValue} style={{ color: '#f59e0b' }}>{kpiData.clientsAtRisk} <span style={{fontSize: '1.2rem'}}>чел.</span></div>
+                            <div className={styles.kpiSubtext}>*Не посещали салон более 60 дней</div>
                         </div>
                     </div>
 
@@ -156,19 +177,21 @@ const AdminCustomerAnalytics = () => {
                             </div>
                         </div>
                         <div className={styles.widget}>
-                            <h3>Динамика LTV и Зоны Риска</h3>
+                            <h3>Динамика LTV и Оттока</h3>
                             <div style={{ height: '300px' }}><Line data={getDynamicsData()} options={dynamicsOptions} /></div>
                         </div>
                     </div>
                 </>
             )}
 
-            {/* Таблица */}
-            <div className={styles.dashboardGrid} style={{ gridTemplateColumns: '1fr', marginTop: '30px' }}>
+            {/* НИЖНИЙ БЛОК: Таблица (Слева) и История (Справа) */}
+            <div className={styles.dashboardGrid} style={{ gridTemplateColumns: '2fr 1fr', marginTop: '30px' }}>
+                
+                {/* 1. Таблица риска (Занимает 2/3 ширины) */}
                 <div className={styles.widget}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '15px' }}>
                         <h3 style={{ margin: 0 }}>Клиенты в зоне риска</h3>
-                        <span style={{ fontSize: '0.85rem', color: '#888', fontStyle: 'italic' }}>*Срез на текущий момент (не зависит от фильтра)</span>
+                        <span style={{ fontSize: '0.85rem', color: '#888', fontStyle: 'italic' }}>*Срез на текущий момент</span>
                     </div>
                     
                     <div className={styles.tableContainer}>
@@ -179,56 +202,109 @@ const AdminCustomerAnalytics = () => {
                                 <thead>
                                     <tr>
                                         <th>Имя клиента</th>
-                                        <th>Дата последнего визита</th>
+                                        <th>Последний визит</th>
                                         <th>LTV (Ценность)</th>
-                                        <th>Вероятность оттока</th>
+                                        <th>Риск оттока</th>
                                         <th style={{ textAlign: 'center' }}>Действия</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {atRiskClients.length > 0 ? atRiskClients.map(client => (
+                                    {atRiskClients.length > 0 ? atRiskClients.map(client => {
+                                        // ЛОГИКА БЛОКИРОВКИ КНОПКИ (Если контакт был менее 7 дней назад)
+                                        const isRecentlyContacted = client.lastContactStatus === 'CONTACTED' && 
+                                            client.lastContactDate && 
+                                            (new Date() - new Date(client.lastContactDate)) / (1000 * 3600 * 24) <= 7;
+
+                                        return (
                                         <tr key={client.clientId}>
                                             <td style={{ fontWeight: '600' }}>{client.clientName}</td>
-                                            <td>{new Date(client.lastVisitDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
+                                            <td>{new Date(client.lastVisitDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</td>
                                             <td style={{ fontWeight: 'bold', color: '#10b981' }}>{client.ltv} BYN</td>
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <div style={{ width: '100%', maxWidth: '120px', backgroundColor: '#e5e7eb', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                                                    <div style={{ width: '100%', maxWidth: '80px', backgroundColor: '#e5e7eb', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
                                                         <div style={{ width: `${client.churnProbability}%`, backgroundColor: client.churnProbability >= 85 ? '#ef4444' : '#f59e0b', height: '100%' }}></div>
                                                     </div>
-                                                    <span style={{ color: client.churnProbability >= 85 ? '#ef4444' : '#f59e0b', fontWeight: 'bold', minWidth: '40px' }}>
+                                                    <span style={{ color: client.churnProbability >= 85 ? '#ef4444' : '#f59e0b', fontWeight: 'bold', minWidth: '40px', fontSize: '0.9rem' }}>
                                                         {client.churnProbability}%
                                                     </span>
                                                 </div>
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
-                                                <button 
-                                                    className={styles.editButton} 
-                                                    style={{ minWidth: 'auto', padding: '6px 12px' }}
-                                                    onClick={() => setSelectedClientId(client.clientId)} // Открываем модалку по ID
-                                                >
-                                                    Связаться
-                                                </button>
+                                                {isRecentlyContacted ? (
+                                                    <div style={{ 
+                                                        backgroundColor: '#f3f4f6', color: '#6b7280', padding: '4px 8px', 
+                                                        borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', lineHeight: '1.2' 
+                                                    }}>
+                                                        Связались<br/>{new Date(client.lastContactDate).toLocaleDateString('ru-RU')}
+                                                    </div>
+                                                ) : (
+                                                    <button 
+                                                        className={styles.editButton} 
+                                                        style={{ minWidth: 'auto', padding: '6px 12px' }}
+                                                        onClick={() => setSelectedClientId(client.clientId)}
+                                                    >
+                                                        Связаться
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
-                                    )) : (
-                                        <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: '#777' }}>В зоне риска нет клиентов. Отличная работа!</td></tr>
+                                    )}) : (
+                                        <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: '#777' }}>В зоне риска нет клиентов.</td></tr>
                                     )}
                                 </tbody>
                             </table>
                         )}
                     </div>
                 </div>
+
+                {/* 2. Лента истории (Занимает 1/3 ширины) */}
+                <div className={styles.widget}>
+                    <h3 style={{ margin: '0 0 15px 0' }}>История взаимодействий</h3>
+                    <div style={{ maxHeight: '600px', overflowY: 'auto', paddingRight: '10px' }}>
+                        {loadingInteractions ? (
+                            <div className={styles.loader} style={{ textAlign: 'center', padding: '20px' }}>Загрузка истории...</div>
+                        ) : interactions.length > 0 ? interactions.map(int => (
+                            <div key={int.id} style={{ 
+                                borderLeft: `4px solid ${int.status === 'CHURNED' ? '#ef4444' : '#10b981'}`, 
+                                padding: '12px', marginBottom: '15px', backgroundColor: '#f8f9fa', borderRadius: '0 8px 8px 0' 
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                    <strong style={{ fontSize: '0.95rem' }}>{int.clientName}</strong>
+                                    <span style={{ fontSize: '0.8rem', color: '#6b7280' }}>
+                                        {new Date(int.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: int.status === 'CHURNED' ? '#ef4444' : '#10b981', marginBottom: '8px' }}>
+                                    {int.status === 'CHURNED' ? '❌ Окончательный отток' : '📞 Контакт состоялся'}
+                                </div>
+                                {int.notes && (
+                                    <div style={{ fontSize: '0.85rem', color: '#4b5563', fontStyle: 'italic', backgroundColor: '#fff', padding: '8px', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
+                                        «{int.notes}»
+                                    </div>
+                                )}
+                            </div>
+                        )) : (
+                            <div style={{ textAlign: 'center', color: '#9ca3af', padding: '40px 0', fontStyle: 'italic' }}>
+                                Вы еще не совершали звонков
+                            </div>
+                        )}
+                    </div>
+                </div>
+
             </div>
 
-            {/* РЕНДЕР МОДАЛКИ (Если selectedClientId не null) */}
+            {/* РЕНДЕР МОДАЛКИ */}
             {selectedClientId && (
                 <ClientActionModal 
                     clientId={selectedClientId} 
                     onClose={() => setSelectedClientId(null)} 
                     onSuccess={() => {
                         setSelectedClientId(null);
-                        loadAtRiskTable(); // Обновляем таблицу после успешного действия
+                        // Автоматически перерисовываем все блоки после закрытия модалки!
+                        loadAtRiskTable(); 
+                        loadInteractions();
+                        loadKpiData();
                     }}
                 />
             )}

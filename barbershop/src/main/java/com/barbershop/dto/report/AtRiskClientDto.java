@@ -8,6 +8,8 @@ public class AtRiskClientDto {
     private LocalDateTime lastVisitDate;
     private Double ltv;
     private Integer churnProbability;
+    private java.time.LocalDateTime lastContactDate;
+    private String lastContactStatus;
 
     public Long getClientId() { return clientId; }
     public void setClientId(Long clientId) { this.clientId = clientId; }
@@ -23,4 +25,9 @@ public class AtRiskClientDto {
 
     public Integer getChurnProbability() { return churnProbability; }
     public void setChurnProbability(Integer churnProbability) { this.churnProbability = churnProbability; }
+    public java.time.LocalDateTime getLastContactDate() { return lastContactDate; }
+    public void setLastContactDate(java.time.LocalDateTime lastContactDate) { this.lastContactDate = lastContactDate; }
+
+    public String getLastContactStatus() { return lastContactStatus; }
+    public void setLastContactStatus(String lastContactStatus) { this.lastContactStatus = lastContactStatus; }
 }

@@ -45,8 +45,12 @@ public class CustomerAnalyticsController {
     public ResponseEntity<Void> saveContactResult(
             @PathVariable Long clientId,
             @RequestBody ContactResultDto resultDto) {
-
-        System.out.println("LOG: Контакт с клиентом " + clientId + ". Статус: " + resultDto.getStatus() + ". Заметка: " + resultDto.getNotes());
+        customerAnalyticsService.saveContactResult(clientId, resultDto);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/interactions")
+    public ResponseEntity<List<com.barbershop.dto.report.InteractionDto>> getRecentInteractions() {
+        return ResponseEntity.ok(customerAnalyticsService.getRecentInteractions());
     }
 }

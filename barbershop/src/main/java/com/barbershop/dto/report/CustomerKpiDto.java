@@ -5,8 +5,9 @@ import java.util.List;
 public class CustomerKpiDto {
     private Double averageLtv;
     private Double previousAverageLtv;
+
     private Integer clientsAtRisk;
-    private Double retainedRevenue;
+    private Double churnRate; // <-- Новое поле вместо retainedRevenue
 
     // Данные для круговой диаграммы (Сегментация)
     private Integer newClients;
@@ -19,7 +20,7 @@ public class CustomerKpiDto {
     private List<Double> dynamicsLtv;
     private List<Double> dynamicsChurnRate;
 
-    // Getters and Setters для ВСЕХ полей
+    // Getters and Setters
     public Double getAverageLtv() { return averageLtv; }
     public void setAverageLtv(Double averageLtv) { this.averageLtv = averageLtv; }
 
@@ -29,8 +30,8 @@ public class CustomerKpiDto {
     public Integer getClientsAtRisk() { return clientsAtRisk; }
     public void setClientsAtRisk(Integer clientsAtRisk) { this.clientsAtRisk = clientsAtRisk; }
 
-    public Double getRetainedRevenue() { return retainedRevenue; }
-    public void setRetainedRevenue(Double retainedRevenue) { this.retainedRevenue = retainedRevenue; }
+    public Double getChurnRate() { return churnRate; }
+    public void setChurnRate(Double churnRate) { this.churnRate = churnRate; }
 
     public Integer getNewClients() { return newClients; }
     public void setNewClients(Integer newClients) { this.newClients = newClients; }
