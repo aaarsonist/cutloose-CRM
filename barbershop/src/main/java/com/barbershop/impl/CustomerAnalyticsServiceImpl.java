@@ -177,13 +177,13 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
                 .collect(Collectors.groupingBy(v -> v.getBookedBy().getId()));
 
         Map<Long, ClientInteraction> latestInteractions = getLatestInteractions();
-        List<com.barbershop.dto.report.AtRiskClientDto> atRiskClients = new ArrayList<>();
+        List<com.barbershop.dto.report.AtRiskClientDto> allClientsTable = new ArrayList<>();
 
         for (Map.Entry<Long, List<Timetable>> entry : visitsByUser.entrySet()) {
             Long userId = entry.getKey();
             ClientInteraction latestAction = latestInteractions.get(userId);
 
-            // Если клиент уже помечен как отток — скрываем его из таблицы!
+            // Если клиент уже окончательно ушел — скрываем его
             if (latestAction != null && "CHURNED".equals(latestAction.getStatus())) {
                 continue;
             }
@@ -193,29 +193,57 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
             Timetable lastVisit = userVisits.get(userVisits.size() - 1);
             long daysSinceLastVisit = ChronoUnit.DAYS.between(lastVisit.getAppointmentTime(), now);
 
-            if (daysSinceLastVisit > 60 && daysSinceLastVisit <= 365) {
-                double ltv = userVisits.stream().mapToDouble(v -> v.getService().getPrice()).sum();
-                int probability = (int) Math.min(99, 50 + (daysSinceLastVisit - 60) * 0.8);
+            double ltv = userVisits.stream().mapToDouble(v -> v.getService().getPrice()).sum();
 
-                com.barbershop.dto.report.AtRiskClientDto dto = new com.barbershop.dto.report.AtRiskClientDto();
-                dto.setClientId(userId);
-                dto.setClientName(lastVisit.getBookedBy().getName() != null ? lastVisit.getBookedBy().getName() : "Клиент #" + userId);
-                dto.setLastVisitDate(lastVisit.getAppointmentTime());
-                dto.setLtv(Math.round(ltv * 100.0) / 100.0);
-                dto.setChurnProbability(probability);
-
-                // Передаем дату и статус последнего контакта для блокировки кнопки на фронте
-                if (latestAction != null) {
-                    dto.setLastContactDate(latestAction.getInteractionDate());
-                    dto.setLastContactStatus(latestAction.getStatus());
-                }
-                atRiskClients.add(dto);
+            // Расчет риска: >=50% это зона риска, <50% это безопасная зона
+            int probability;
+            if (daysSinceLastVisit > 60) {
+                probability = (int) Math.min(99, 50 + (daysSinceLastVisit - 60) * 0.8);
+            } else {
+                probability = (int) Math.max(0, (daysSinceLastVisit / 60.0) * 49);
             }
+
+            com.barbershop.dto.report.AtRiskClientDto dto = new com.barbershop.dto.report.AtRiskClientDto();
+            dto.setClientId(userId);
+            dto.setClientName(lastVisit.getBookedBy().getName() != null ? lastVisit.getBookedBy().getName() : "Клиент #" + userId);
+            dto.setLastVisitDate(lastVisit.getAppointmentTime());
+            dto.setLtv(Math.round(ltv * 100.0) / 100.0);
+            dto.setChurnProbability(probability);
+
+            if (latestAction != null) {
+                dto.setLastContactDate(latestAction.getInteractionDate());
+                dto.setLastContactStatus(latestAction.getStatus());
+            }
+            allClientsTable.add(dto);
         }
 
-        atRiskClients.sort(Comparator.comparing(com.barbershop.dto.report.AtRiskClientDto::getLtv).reversed()
-                .thenComparing(Comparator.comparing(com.barbershop.dto.report.AtRiskClientDto::getChurnProbability).reversed()));
-        return atRiskClients;
+        // Сортируем: сначала самые горящие по оттоку, затем по LTV
+        allClientsTable.sort(Comparator.comparing(com.barbershop.dto.report.AtRiskClientDto::getChurnProbability).reversed()
+                .thenComparing(Comparator.comparing(com.barbershop.dto.report.AtRiskClientDto::getLtv).reversed()));
+        return allClientsTable;
+    }
+
+    @Override
+    public List<com.barbershop.dto.report.VisitHistoryDto> getClientHistory(Long clientId) {
+        List<Timetable> visits = timetableRepository.findAllCompletedInPeriod(LocalDateTime.of(2000, 1, 1, 0, 0), LocalDateTime.now())
+                .stream().filter(t -> t.getBookedBy() != null && t.getBookedBy().getId().equals(clientId))
+                .sorted(Comparator.comparing(Timetable::getAppointmentTime).reversed()) // Самые новые сверху
+                .collect(Collectors.toList());
+
+        return visits.stream().map(v -> {
+            com.barbershop.dto.report.VisitHistoryDto dto = new com.barbershop.dto.report.VisitHistoryDto();
+            dto.setDate(v.getAppointmentTime());
+            dto.setServiceName(v.getService().getName());
+            dto.setMasterName(v.getMaster().getName());
+            dto.setPrice(v.getService().getPrice());
+
+            if (v.getReviews() != null && !v.getReviews().isEmpty()) {
+                com.barbershop.model.Review review = v.getReviews().get(0);
+                dto.setReviewRating(review.getRating());
+                dto.setReviewText(review.getReviewText());
+            }
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     // --- НОВЫЕ МЕТОДЫ ДЛЯ ИСТОРИИ ВЗАИМОДЕЙСТВИЙ ---

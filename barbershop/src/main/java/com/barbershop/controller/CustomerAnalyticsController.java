@@ -53,4 +53,8 @@ public class CustomerAnalyticsController {
     public ResponseEntity<List<com.barbershop.dto.report.InteractionDto>> getRecentInteractions() {
         return ResponseEntity.ok(customerAnalyticsService.getRecentInteractions());
     }
+    @GetMapping("/client-history/{clientId}")
+    public ResponseEntity<List<com.barbershop.dto.report.VisitHistoryDto>> getClientHistory(@PathVariable Long clientId) {
+        return ResponseEntity.ok(customerAnalyticsService.getClientHistory(clientId));
+    }
 }

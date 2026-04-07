@@ -9,4 +9,5 @@ public interface CustomerAnalyticsService {
     com.barbershop.dto.report.ClientActionDto getClientActionData(Long clientId);
     void saveContactResult(Long clientId, com.barbershop.dto.report.ContactResultDto resultDto);
     java.util.List<com.barbershop.dto.report.InteractionDto> getRecentInteractions();
+    java.util.List<com.barbershop.dto.report.VisitHistoryDto> getClientHistory(Long clientId);
 }

@@ -36,6 +36,7 @@ const AdminCustomerAnalytics = () => {
 
     // Стейт для управления модальным окном
     const [selectedClientId, setSelectedClientId] = useState(null);
+    const [filterType, setFilterType] = useState('ALL');
 
     // --- ЗАГРУЗКА ДАННЫХ ---
     const loadKpiData = useCallback(async () => {
@@ -187,11 +188,26 @@ const AdminCustomerAnalytics = () => {
             {/* НИЖНИЙ БЛОК: Таблица (Слева) и История (Справа) */}
             <div className={styles.dashboardGrid} style={{ gridTemplateColumns: '2fr 1fr', marginTop: '30px' }}>
                 
-                {/* 1. Таблица риска (Занимает 2/3 ширины) */}
+                {/* 1. Таблица клиентов (Занимает 2/3 ширины) */}
                 <div className={styles.widget}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '15px' }}>
-                        <h3 style={{ margin: 0 }}>Клиенты в зоне риска</h3>
-                        <span style={{ fontSize: '0.85rem', color: '#888', fontStyle: 'italic' }}>*Срез на текущий момент</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h3 style={{ margin: 0 }}>База клиентов</h3>
+                        
+                        {/* ФИЛЬТР: КОМПАКТНЫЙ ВЫПАДАЮЩИЙ СПИСОК (Прижат вправо) */}
+                        <select 
+                            value={filterType}
+                            onChange={(e) => setFilterType(e.target.value)}
+                            style={{
+                                width: '180px', // Компактный размер (меньше в 4-5 раз)
+                                padding: '6px 10px', borderRadius: '6px', border: '1px solid #d1d5db',
+                                fontSize: '0.85rem', outline: 'none', cursor: 'pointer', backgroundColor: '#f9fafb', color: '#374151',
+                                fontWeight: '500'
+                            }}
+                        >
+                            <option value="ALL">Все клиенты</option>
+                            <option value="AT_RISK">Только в зоне риска</option>
+                            <option value="SAFE">Только вне риска</option>
+                        </select>
                     </div>
                     
                     <div className={styles.tableContainer}>
@@ -205,17 +221,17 @@ const AdminCustomerAnalytics = () => {
                                         <th>Последний визит</th>
                                         <th>LTV (Ценность)</th>
                                         <th>Риск оттока</th>
-                                        <th style={{ textAlign: 'center' }}>Действия</th>
+                                        <th style={{ textAlign: 'center' }}>Профиль</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {atRiskClients.length > 0 ? atRiskClients.map(client => {
-                                        // ЛОГИКА БЛОКИРОВКИ КНОПКИ (Если контакт был менее 7 дней назад)
-                                        const isRecentlyContacted = client.lastContactStatus === 'CONTACTED' && 
-                                            client.lastContactDate && 
-                                            (new Date() - new Date(client.lastContactDate)) / (1000 * 3600 * 24) <= 7;
-
-                                        return (
+                                    {atRiskClients
+                                        .filter(client => {
+                                            if (filterType === 'AT_RISK') return client.churnProbability >= 50;
+                                            if (filterType === 'SAFE') return client.churnProbability < 50;
+                                            return true; 
+                                        })
+                                        .map(client => (
                                         <tr key={client.clientId}>
                                             <td style={{ fontWeight: '600' }}>{client.clientName}</td>
                                             <td>{new Date(client.lastVisitDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</td>
@@ -223,34 +239,36 @@ const AdminCustomerAnalytics = () => {
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                     <div style={{ width: '100%', maxWidth: '80px', backgroundColor: '#e5e7eb', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
-                                                        <div style={{ width: `${client.churnProbability}%`, backgroundColor: client.churnProbability >= 85 ? '#ef4444' : '#f59e0b', height: '100%' }}></div>
+                                                        <div style={{ width: `${client.churnProbability}%`, 
+                                                            backgroundColor: client.churnProbability >= 85 ? '#ef4444' : (client.churnProbability >= 50 ? '#f59e0b' : '#10b981'), 
+                                                            height: '100%' 
+                                                        }}></div>
                                                     </div>
-                                                    <span style={{ color: client.churnProbability >= 85 ? '#ef4444' : '#f59e0b', fontWeight: 'bold', minWidth: '40px', fontSize: '0.9rem' }}>
+                                                    <span style={{ 
+                                                        color: client.churnProbability >= 85 ? '#ef4444' : (client.churnProbability >= 50 ? '#f59e0b' : '#10b981'), 
+                                                        fontWeight: 'bold', minWidth: '40px', fontSize: '0.9rem' 
+                                                    }}>
                                                         {client.churnProbability}%
                                                     </span>
                                                 </div>
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
-                                                {isRecentlyContacted ? (
-                                                    <div style={{ 
-                                                        backgroundColor: '#f3f4f6', color: '#6b7280', padding: '4px 8px', 
-                                                        borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', lineHeight: '1.2' 
-                                                    }}>
-                                                        Связались<br/>{new Date(client.lastContactDate).toLocaleDateString('ru-RU')}
-                                                    </div>
-                                                ) : (
-                                                    <button 
-                                                        className={styles.editButton} 
-                                                        style={{ minWidth: 'auto', padding: '6px 12px' }}
-                                                        onClick={() => setSelectedClientId(client.clientId)}
-                                                    >
-                                                        Связаться
-                                                    </button>
-                                                )}
+                                                <button 
+                                                    style={{ 
+                                                        padding: '6px 12px', border: '1px solid #d1d5db', backgroundColor: '#fff', color: '#374151',
+                                                        borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', transition: 'background-color 0.2s' 
+                                                    }}
+                                                    onMouseEnter={(e) => { e.target.style.backgroundColor = '#f3f4f6'; }}
+                                                    onMouseLeave={(e) => { e.target.style.backgroundColor = '#fff'; }}
+                                                    onClick={() => setSelectedClientId(client.clientId)}
+                                                >
+                                                    Подробнее
+                                                </button>
                                             </td>
                                         </tr>
-                                    )}) : (
-                                        <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: '#777' }}>В зоне риска нет клиентов.</td></tr>
+                                    ))}
+                                    {atRiskClients.filter(c => filterType === 'ALL' ? true : (filterType === 'AT_RISK' ? c.churnProbability >= 50 : c.churnProbability < 50)).length === 0 && (
+                                        <tr><td colSpan="5" style={{ textAlign: 'center', padding: '30px', color: '#777' }}>В базе нет подходящих клиентов.</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -297,11 +315,12 @@ const AdminCustomerAnalytics = () => {
             {/* РЕНДЕР МОДАЛКИ */}
             {selectedClientId && (
                 <ClientActionModal 
-                    clientId={selectedClientId} 
+                    clientId={selectedClientId}
+                    // Передаем весь объект клиента, чтобы внутри знать про lastContactDate
+                    clientData={atRiskClients.find(c => c.clientId === selectedClientId)} 
                     onClose={() => setSelectedClientId(null)} 
                     onSuccess={() => {
                         setSelectedClientId(null);
-                        // Автоматически перерисовываем все блоки после закрытия модалки!
                         loadAtRiskTable(); 
                         loadInteractions();
                         loadKpiData();
