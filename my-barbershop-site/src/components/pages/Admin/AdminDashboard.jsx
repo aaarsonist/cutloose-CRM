@@ -32,8 +32,9 @@ function AdminDashboard() {
                 pauseOnHover
             />
 
+            {/* НОВОЕ: Добавлен динамический класс styles.hamburgerBtnOpen */}
             <button 
-                className={styles.hamburgerBtn} 
+                className={`${styles.hamburgerBtn} ${isSidebarOpen ? styles.hamburgerBtnOpen : ''}`} 
                 onClick={toggleSidebar}
                 onMouseEnter={() => setIsSidebarOpen(true)}
             >

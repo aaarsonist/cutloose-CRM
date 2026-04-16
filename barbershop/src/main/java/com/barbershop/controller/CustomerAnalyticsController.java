@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/customer-analytics")
-@PreAuthorize("hasRole('ADMIN')") // <-- Исправлено: теперь используется hasRole, как в твоем SecurityConfig
+@PreAuthorize("hasRole('ADMIN')")
 public class CustomerAnalyticsController {
 
     private final CustomerAnalyticsService customerAnalyticsService;

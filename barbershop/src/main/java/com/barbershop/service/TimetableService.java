@@ -15,4 +15,5 @@ public interface TimetableService {
     void cancelAppointment(Long appointmentId, Long userId);
     void adminCancelAppointment(Long id);
     Timetable adminBookAppointment(AdminBookingRequestDto bookingRequest);
+    Timetable updateAppointment(Long id, Timetable updateRequest);
 }

@@ -164,4 +164,20 @@ public class TimetableServiceImpl implements TimetableService {
 
         return timetableRepository.save(newAppointment);
     }
+    @Override
+    public Timetable updateAppointment(Long id, Timetable updateRequest) {
+        // 1. Находим существующую запись
+        Timetable existingAppointment = timetableRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Запись не найдена"));
+
+        // 2. Обновляем данные (время, мастер, услуга)
+        existingAppointment.setAppointmentTime(updateRequest.getAppointmentTime());
+
+        // В Spring Data JPA достаточно передать объекты с ID
+        existingAppointment.setMaster(updateRequest.getMaster());
+        existingAppointment.setService(updateRequest.getService());
+
+        // 3. Сохраняем обновленную запись в базу
+        return timetableRepository.save(existingAppointment);
+    }
 }

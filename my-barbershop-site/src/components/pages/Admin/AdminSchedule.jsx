@@ -27,7 +27,6 @@ const formatTime = (timeString) => {
     return timeString;
 };
 
-
 function AdminSchedule() {
     const [masters, setMasters] = useState([]);
     const [schedules, setSchedules] = useState([]);
@@ -79,6 +78,7 @@ function AdminSchedule() {
     const findScheduleEntry = (masterId, dayOfWeek) => { 
         return schedules.find(s => s.master.id === masterId && s.dayOfWeek === dayOfWeek);
     };
+
     const handleCellClick = (master, dayOfWeek) => { 
         const entry = findScheduleEntry(master.id, dayOfWeek);
         if (entry) {
@@ -141,7 +141,6 @@ function AdminSchedule() {
     };
 
     const handleDeleteAppointment = (id) => {
-        
         const ConfirmationToast = ({ closeToast }) => {
             const confirmAction = async () => {
                 try {
@@ -191,31 +190,73 @@ function AdminSchedule() {
     const handleAdminBookingSave = async (bookingRequest) => {
         try {
             await api.post('/api/timetable/admin/book', bookingRequest);
-            
             toast.success('Клиент успешно записан!');
             setIsAdminBookingModalOpen(false); 
-            
             fetchData(); 
-            
         } catch (error) {
             console.error("Ошибка при создании записи:", error);
             toast.error("Не удалось создать запись. Возможно, слот уже занят.");
         }
     };
     
+    // --- АЛГОРИТМ РАСЧЕТА ТЕПЛОВОЙ КАРТЫ ДЛЯ КАЛЕНДАРЯ ---
+    const getDayWorkloadStyle = (date) => {
+        if (!schedules.length) return {};
+
+        // 1. Определяем день недели для сопоставления с шаблонами графиков мастеров
+        const jsDayToDayName = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];
+        const dayOfWeekStr = jsDayToDayName[date.getDay()];
+
+        // 2. Считаем ПРЕДЛОЖЕНИЕ (сумма часов всех мастеров, работающих в этот день недели)
+        const daySchedules = schedules.filter(s => s.dayOfWeek === dayOfWeekStr);
+        let capacityHours = 0;
+        daySchedules.forEach(ws => {
+            if (ws.startTime && ws.endTime) {
+                const start = parseInt(ws.startTime.split(':')[0], 10);
+                const end = parseInt(ws.endTime.split(':')[0], 10);
+                if (!isNaN(start) && !isNaN(end)) {
+                    capacityHours += (end - start);
+                }
+            }
+        });
+
+        // 3. Считаем СПРОС (количество записей на эту конкретную дату)
+        const dayAppointments = appointments.filter(app => {
+            if (!app.start) return false;
+            return app.start.getFullYear() === date.getFullYear() &&
+                   app.start.getMonth() === date.getMonth() &&
+                   app.start.getDate() === date.getDate();
+        });
+
+        const bookedHours = dayAppointments.length;
+
+        // 4. РАСКРАСКА ДНЯ
+        if (capacityHours === 0) {
+            return {
+                style: { backgroundColor: '#f9f9f9' },
+                title: 'Выходной (нет мастеров)'
+            };
+        }
+
+        const loadPercentage = (bookedHours / capacityHours) * 100;
+        let bgColor = '';
+
+        if (loadPercentage < 30) bgColor = '#e0f2fe';      // Голубой (Свободно)
+        else if (loadPercentage < 60) bgColor = '#dcfce7'; // Зеленый (Оптимально)
+        else if (loadPercentage < 85) bgColor = '#ffedd5'; // Оранжевый (Плотно)
+        else bgColor = '#fee2e2';                          // Красный (Перегруз)
+
+        return {
+            style: { backgroundColor: bgColor },
+            title: `Загрузка: ${Math.round(loadPercentage)}% (${bookedHours} из ${capacityHours} ч.)`
+        };
+    };
+
     const messages = {
-        allDay: 'Весь день',
-        previous: 'Назад',
-        next: 'Вперед',
-        today: 'Сегодня',
-        month: 'Месяц',
-        week: 'Неделя',
-        day: 'День',
-        agenda: 'Список',
-        date: 'Дата',
-        time: 'Время',
-        event: 'Событие',
-        noEventsInRange: 'На этот период нет записей.',
+        allDay: 'Весь день', previous: 'Назад', next: 'Вперед',
+        today: 'Сегодня', month: 'Месяц', week: 'Неделя',
+        day: 'День', agenda: 'Список', date: 'Дата',
+        time: 'Время', event: 'Событие', noEventsInRange: 'На этот период нет записей.',
     };
 
     if (isLoading) {
@@ -226,7 +267,33 @@ function AdminSchedule() {
         <>
             <div className={styles.calendarContainer}>
                 <div className={styles.calendarHeader}>
-                    <h3>Календарь записей</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                        <h3 style={{ margin: 0, border: 'none', paddingBottom: 0 }}>Календарь записей</h3>
+                        
+                        <div style={{ 
+                            display: 'flex', alignItems: 'center', gap: '15px', 
+                            fontSize: '0.85rem', color: '#4b5563', fontWeight: '500'
+                        }}>
+                            <span style={{ fontWeight: '600', color: '#333' }}>День по загрузке:</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: '14px', height: '14px', backgroundColor: '#e0f2fe', border: '1px solid #bae6fd', borderRadius: '4px' }}></div>
+                                <span>&lt;30% (Свободно)</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: '14px', height: '14px', backgroundColor: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '4px' }}></div>
+                                <span>30-60% (Норма)</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: '14px', height: '14px', backgroundColor: '#ffedd5', border: '1px solid #fed7aa', borderRadius: '4px' }}></div>
+                                <span>60-85% (Плотно)</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: '14px', height: '14px', backgroundColor: '#fee2e2', border: '1px solid #fecaca', borderRadius: '4px' }}></div>
+                                <span>&gt;85% (Перегруз)</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <button 
                         className={styles.bookClientButton}
                         onClick={() => setIsAdminBookingModalOpen(true)}
@@ -249,6 +316,7 @@ function AdminSchedule() {
                     timeslots={2} 
                     min={new Date(0, 0, 0, 9, 0, 0)} 
                     max={new Date(0, 0, 0, 21, 0, 0)} 
+                    dayPropGetter={getDayWorkloadStyle} 
                 />
             </div>
 

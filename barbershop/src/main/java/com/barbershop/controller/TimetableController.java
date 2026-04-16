@@ -110,4 +110,13 @@ public class TimetableController {
             return ResponseEntity.badRequest().build();
         }
     }
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateAppointment(@PathVariable Long id, @RequestBody Timetable updateRequest) {
+        try {
+            Timetable updatedAppointment = timetableService.updateAppointment(id, updateRequest);
+            return ResponseEntity.ok(updatedAppointment);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Ошибка при обновлении записи: " + e.getMessage());
+        }
+    }
 }

@@ -13,6 +13,10 @@
   padding: 20px;
   box-shadow: 2px 0 5px rgba(0,0,0,0.05);
   flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh; 
+  overflow-y: auto; 
 }
 
 .sidebar h3 {
@@ -550,8 +554,11 @@
   border-color: #ffb74d !important;
   color: #000000 !important; 
 }
+/* Современный и минималистичный стиль для сегодняшнего дня */
 :global(.rbc-today) {
-  background-color: #fff8e1 !important; 
+  box-shadow: inset 0 4px 0 0 #f0a500 !important; /* Аккуратная акцентная полоса сверху ячейки */
+  position: relative;
+  z-index: 5;
 }
 
 :global(.rbc-toolbar button.rbc-active) {
@@ -889,10 +896,10 @@
 }
 
 .hamburgerBtn {
-  position: absolute;
-  top: 15px;
+  position: fixed; 
+  top: 120px; 
   left: 20px;
-  z-index: 1000; 
+  z-index: 9999;
   
   background: #f0a500; 
   color: white;
@@ -906,11 +913,16 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-  transition: background-color 0.2s, left 0.3s ease-in-out;
+  transition: background-color 0.2s, opacity 0.3s ease-in-out;
 }
 
 .hamburgerBtn:hover {
   background-color: #d49200;
+}
+
+.hamburgerBtnOpen {
+  opacity: 0; /* Делаем кнопку полностью прозрачной */
+  pointer-events: none; /* Отключаем возможность случайно нажать на невидимую кнопку */
 }
 
 .sidebar h3 {

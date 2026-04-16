@@ -8,7 +8,9 @@ function User(){
     return(
     <div className="App">
       <Navigation />
-      <UserDashboard />
+      <div className="main-wrapper">
+                <UserDashboard />
+            </div>
       <section id="about">
         <Footer/>
       </section>     
