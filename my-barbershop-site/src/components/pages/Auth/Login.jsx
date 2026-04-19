@@ -43,7 +43,6 @@ function Login() {
                  throw new Error(`Login failed with status code: ${response.status}`);
             }
 
-
         } catch (error) {
             console.error("Error during login:", error); 
 
@@ -59,7 +58,6 @@ function Login() {
         }
     };
     
-
     return (
         <div className={styles.App}>
             <p className={styles.title}>Вход</p>
@@ -70,20 +68,45 @@ function Login() {
                     placeholder="Введите email" 
                     {...register("email", { required: true })} 
                 />
-                {errors.email && <span style={{ color: "red" }}>*Email обязателен</span>}
+                {errors.email && <span style={{ color: "red", display: 'block', fontSize: '12px' }}>*Email обязателен</span>}
 
                 <input 
                     type="password" 
                     placeholder="Введите пароль" 
                     {...register("password", { required: true })} 
                 />
-                {errors.password && <span style={{ color: "red" }}>*Пароль обязателен</span>}
+                {errors.password && <span style={{ color: "red", display: 'block', fontSize: '12px' }}>*Пароль обязателен</span>}
 
                 <input 
                     type="submit" 
                     value="Войти" 
                 />
             </form>
+
+            {/* --- НАЧАЛО ДОБАВЛЕННОГО КОДА ДЛЯ GOOGLE --- */}
+            <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0', color: '#aaa', fontSize: '14px' }}>
+                <div style={{ flex: 1, borderBottom: '1px solid #ddd' }}></div>
+                <span style={{ padding: '0 10px' }}>ИЛИ</span>
+                <div style={{ flex: 1, borderBottom: '1px solid #ddd' }}></div>
+            </div>
+
+            <a 
+                href="http://localhost:8080/oauth2/authorization/google" 
+                style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                    width: '100%', padding: '12px', border: '1px solid #dadce0', borderRadius: '4px',
+                    backgroundColor: '#fff', color: '#3c4043', fontSize: '15px', fontWeight: '500',
+                    cursor: 'pointer', textDecoration: 'none', marginBottom: '20px'
+                }}
+            >
+                <img 
+                    src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_Logo.svg" 
+                    alt="Google" 
+                    style={{ width: '20px', height: '20px' }}
+                />
+                Вход через Google
+            </a>
+            {/* --- КОНЕЦ ДОБАВЛЕННОГО КОДА ДЛЯ GOOGLE --- */}
 
             <p>
                 Еще не зарегистрированы?{" "}

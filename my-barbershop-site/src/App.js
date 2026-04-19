@@ -7,6 +7,7 @@ import RegisterPage from './components/RegisterPage';
 import Home from './components/Home';
 import User from './components/User';
 import Admin from './components/Admin';
+import OAuth2RedirectHandler from './components/pages/Auth/OAuth2RedirectHandler';
 import './App.css';
 
 function PrivateRoute({ children, role }) {
@@ -56,6 +57,7 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
 
         <Route path="*" element={<div>404 — страница не найдена</div>} />
         </Routes>

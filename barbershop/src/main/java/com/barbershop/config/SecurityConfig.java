@@ -1,6 +1,8 @@
 package com.barbershop.config;
 
+import com.barbershop.service.CustomOAuth2UserService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,6 +22,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    @Autowired
+    private CustomOAuth2UserService customOAuth2UserService;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -28,7 +33,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/users/register", "/health", "/services/**", "/api/masters").permitAll()
+                        .requestMatchers("/api/users/register", "/health", "/services/**", "/api/masters", "/login/oauth2/**", "/oauth2/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/reviews").permitAll()
 
                         .requestMatchers("/api/users/current").authenticated()
@@ -54,6 +59,16 @@ public class SecurityConfig {
                         .successHandler((req, res, auth) -> res.setStatus(HttpServletResponse.SC_OK))
                         .failureHandler((req, res, ex) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED))
                         .permitAll()
+                )
+
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler((req, res, auth) -> {
+                            // МЕНЯЕМ АДРЕС ПЕРЕНАПРАВЛЕНИЯ СЮДА:
+                            res.sendRedirect("http://localhost:3000/oauth2/redirect");
+                        })
                 )
 
                 .logout(logout -> logout

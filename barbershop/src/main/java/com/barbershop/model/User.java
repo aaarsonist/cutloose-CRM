@@ -23,8 +23,13 @@ public class User {
     @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
+
+    @Column(name = "provider")
+    private String provider; // "LOCAL" или "GOOGLE"
+    @Column(name = "provider_id")
+    private String providerId; // ID от Google
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
