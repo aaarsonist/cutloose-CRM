@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -77,21 +78,26 @@ class TimetableServiceTest {
 
     @Test
     void cancelAppointment_ShouldDelete_WhenUserIsOwnerAndStatusBooked() {
-        Long appointmentId = 100L;
-        Long userId = 1L;
-
+        // 1. Создаем пользователя (у него обязательно должен быть ID)
         User user = new User();
-        user.setId(userId);
+        user.setId(1L); // Вот этот Long, который нужен Java
+        user.setUsername("test_user");
 
-        Timetable appointment = new Timetable();
-        appointment.setId(appointmentId);
-        appointment.setBookedBy(user);
-        appointment.setStatus(BookingStatus.BOOKED);
+        // 2. Создаем запись
+        Timetable booking = new Timetable();
+        booking.setId(10L);
+        booking.setBookedBy(user);
+        booking.setStatus(BookingStatus.BOOKED);
+        booking.setAppointmentTime(LocalDateTime.now().plusDays(2));
 
-        when(timetableRepository.findById(appointmentId)).thenReturn(Optional.of(appointment));
+        // 3. Настраиваем мок репозитория
+        when(timetableRepository.findById(10L)).thenReturn(Optional.of(booking));
 
-        timetableService.cancelAppointment(appointmentId, userId);
+        // 4. ВЫЗОВ МЕТОДА (Исправленная строка 101)
+        // Передаем 10L (ID записи) и user.getId() (это вернет 1L, тип Long)
+        timetableService.cancelAppointment(10L, user.getId());
 
-        verify(timetableRepository).delete(appointment);
+        // 5. Проверка
+        verify(timetableRepository, times(1)).delete(booking);
     }
 }
