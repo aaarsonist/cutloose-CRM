@@ -143,7 +143,6 @@ class CustomerAnalyticsServiceTest {
         assertEquals("Алексей", result.getFavoriteMaster());
         assertEquals(150.0, result.getLtv(), "LTV рассчитан неверно");
 
-        // Проверяем, что для клиента с одним визитом выдается нужная базовая рекомендация
         assertEquals("Уточнить качество услуги после первого визита.", result.getRecommendation());
     }
 }

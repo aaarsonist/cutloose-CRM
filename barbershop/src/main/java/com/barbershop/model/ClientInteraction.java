@@ -24,7 +24,7 @@ public class ClientInteraction {
     private LocalDateTime interactionDate;
 
     @Column(nullable = false)
-    private String status; // 'CONTACTED' или 'CHURNED'
+    private String status;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

@@ -277,6 +277,24 @@ function UserDashboard() {
         toast.error("Не удалось обновить запись. Возможно, время уже занято.");
       });
   };
+  const getValidSlots = () => {
+    const now = new Date();
+    const todayString = now.toISOString().split('T')[0];
+    
+    // Если дата в будущем - показываем все слоты
+    if (selectedDate > todayString) return availableSlots;
+    // Если дата в прошлом (на всякий случай) - прячем все слоты
+    if (selectedDate < todayString) return [];
+    
+    // Если выбрано сегодня - фильтруем по текущему времени
+    const currentHour = String(now.getHours()).padStart(2, '0');
+    const currentMinute = String(now.getMinutes()).padStart(2, '0');
+    const currentTimeStr = `${currentHour}:${currentMinute}`;
+    
+    return availableSlots.filter(slot => slot.substring(0, 5) > currentTimeStr);
+  };
+
+  const validSlots = getValidSlots();
 
   return (
     <div className={styles.dashboardContainer}>
@@ -421,13 +439,13 @@ function UserDashboard() {
                       {selectedDate && (
                           <div className={styles.slotsContainer}>
                               {isLoadingSlots && <p>Загрузка свободных слотов...</p>}
-                              {!isLoadingSlots && availableSlots.length > 0 && availableSlots.map(slot => (
-                                  <button key={slot} className={`${styles.slotButton} ${selectedSlot === slot ? styles.selectedSlot : ''}`}
-                                      onClick={() => setSelectedSlot(slot)}>
-                                      {slot.substring(0, 5)}
-                                  </button>
-                              ))}
-                              {!isLoadingSlots && availableSlots.length === 0 && <p>На выбранную дату слотов нет</p>}
+                                {!isLoadingSlots && validSlots.length > 0 && validSlots.map(slot => (
+                                    <button key={slot} className={`${styles.slotButton} ${selectedSlot === slot ? styles.selectedSlot : ''}`}
+                                        onClick={() => setSelectedSlot(slot)}>
+                                        {slot.substring(0, 5)}
+                                    </button>
+                                ))}
+                                {!isLoadingSlots && validSlots.length === 0 && <p>Нет свободных слотов</p>}
                           </div>
                       )}
 
@@ -515,13 +533,13 @@ function UserDashboard() {
 
                       <label className={styles.fieldLabel}>Доступное время:</label>
                       <div className={styles.slotsContainer}>
-                          {isLoadingSlots ? <p>Поиск окон...</p> : availableSlots.map(slot => (
-                              <button key={slot} className={`${styles.slotButton} ${selectedSlot === slot ? styles.selectedSlot : ''}`}
-                                  onClick={() => setSelectedSlot(slot)}>
-                                  {slot.substring(0, 5)}
-                              </button>
-                          ))}
-                          {!isLoadingSlots && availableSlots.length === 0 && <p>Нет свободных окон</p>}
+                        {isLoadingSlots ? <p>Поиск окон...</p> : validSlots.map(slot => (
+                            <button key={slot} className={`${styles.slotButton} ${selectedSlot === slot ? styles.selectedSlot : ''}`}
+                                onClick={() => setSelectedSlot(slot)}>
+                                {slot.substring(0, 5)}
+                            </button>
+                        ))}
+                        {!isLoadingSlots && validSlots.length === 0 && <p>Нет свободных окон</p>}
                       </div>
 
                       <div className={styles.modalActions}>

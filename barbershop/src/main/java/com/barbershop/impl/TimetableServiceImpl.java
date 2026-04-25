@@ -52,6 +52,10 @@ public class TimetableServiceImpl implements TimetableService {
     @Override
     @Transactional
     public Timetable bookAppointment(Timetable timetable, Long userId) {
+        if (timetable.getAppointmentTime() != null &&
+                timetable.getAppointmentTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Нельзя записаться на прошедшее время.");
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Пользователь с ID " + userId + " не найден"));
 
@@ -148,6 +152,10 @@ public class TimetableServiceImpl implements TimetableService {
     @Override
     @Transactional
     public Timetable adminBookAppointment(AdminBookingRequestDto request) {
+        if (request.getAppointmentTime() != null &&
+                request.getAppointmentTime().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Нельзя записаться на прошедшее время.");
+        }
         User client = userService.findOrCreateGuestUser(request.getClientEmail(), request.getClientName());
 
         Master master = masterRepository.findById(request.getMasterId())

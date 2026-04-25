@@ -4,16 +4,17 @@ import com.barbershop.dto.AppointmentDto;
 import com.barbershop.dto.AdminBookingRequestDto;
 import com.barbershop.model.Timetable;
 import com.barbershop.model.User;
+import com.barbershop.repository.UserRepository;
 import com.barbershop.service.TimetableService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import com.barbershop.repository.UserRepository;
 
 @RestController
 @RequestMapping("/api/timetable")
@@ -21,10 +22,22 @@ public class TimetableController {
 
     private final TimetableService timetableService;
     private final UserRepository userRepository;
+
     @Autowired
     public TimetableController(TimetableService timetableService, UserRepository userRepository) {
         this.timetableService = timetableService;
         this.userRepository = userRepository;
+    }
+
+    // --- НОВЫЙ ПРИВАТНЫЙ МЕТОД ДЛЯ ЧИСТОТЫ КОДА ---
+    // Он сам определяет, как получить email: из Google или из обычной формы
+    private String extractUsername(Authentication authentication) {
+        if (authentication == null) return null;
+        if (authentication.getPrincipal() instanceof OAuth2User) {
+            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+            return oauth2User.getAttribute("email");
+        }
+        return authentication.getName();
     }
 
     @GetMapping
@@ -32,34 +45,48 @@ public class TimetableController {
     public ResponseEntity<List<AppointmentDto>> getAllAppointments() {
         return ResponseEntity.ok(timetableService.getAllAppointments());
     }
-    @PostMapping
-    public ResponseEntity<Timetable> bookAppointment(@RequestBody Timetable timetable, Authentication authentication) {
-        String username = authentication.getName();
-        User currentUser = userRepository.findByUsername(username);
 
-        if (currentUser == null) {
-            return ResponseEntity.status(401).build();
+    @PostMapping
+    public ResponseEntity<?> bookAppointment(@RequestBody Timetable timetableRequest, Authentication authentication) {
+        String username = extractUsername(authentication);
+        if (username == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Пользователь не авторизован");
         }
 
-        Timetable bookedTimetable = timetableService.bookAppointment(timetable, currentUser.getId());
-        return ResponseEntity.ok(bookedTimetable);
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Пользователь не найден");
+        }
+
+        try {
+            Timetable savedBooking = timetableService.bookAppointment(timetableRequest, user.getId());
+            return ResponseEntity.ok(savedBooking);
+        } catch (IllegalArgumentException e) {
+            // Возвращаем статус 400 и текст ошибки на фронтенд
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при создании записи");
+        }
     }
 
     @GetMapping("/user/completed")
     public ResponseEntity<List<Timetable>> getCompletedUserAppointments(Authentication authentication) {
-        String username = authentication.getName();
+        // Используем наш новый метод
+        String username = extractUsername(authentication);
         User currentUser = userRepository.findByUsername(username);
 
         if (currentUser == null) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         List<Timetable> completedAppointments = timetableService.getCompletedAppointmentsForUser(currentUser.getId());
         return ResponseEntity.ok(completedAppointments);
     }
+
     @GetMapping("/user/upcoming")
     public ResponseEntity<List<Timetable>> getUpcomingUserAppointments(Authentication authentication) {
-        String username = authentication.getName();
+        // Используем наш новый метод
+        String username = extractUsername(authentication);
         User currentUser = userRepository.findByUsername(username);
 
         if (currentUser == null) {
@@ -72,7 +99,8 @@ public class TimetableController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> cancelAppointment(@PathVariable Long id, Authentication authentication) {
-        String username = authentication.getName();
+        // Используем наш новый метод
+        String username = extractUsername(authentication);
         User currentUser = userRepository.findByUsername(username);
 
         if (currentUser == null) {
@@ -88,6 +116,7 @@ public class TimetableController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
         }
     }
+
     @DeleteMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> adminDeleteAppointment(@PathVariable Long id) {
@@ -100,6 +129,7 @@ public class TimetableController {
             return ResponseEntity.notFound().build();
         }
     }
+
     @PostMapping("/admin/book")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Timetable> adminBookAppointment(@RequestBody AdminBookingRequestDto request) {
@@ -110,6 +140,7 @@ public class TimetableController {
             return ResponseEntity.badRequest().build();
         }
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateAppointment(@PathVariable Long id, @RequestBody Timetable updateRequest) {
         try {

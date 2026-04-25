@@ -82,7 +82,22 @@ function AdminBookingModal({ isOpen, onClose, onSave }) {
         
         onSave(bookingRequest);
     };
-    
+    const getValidSlots = () => {
+        const now = new Date();
+        const todayString = now.toISOString().split('T')[0];
+        
+        if (selectedDate > todayString) return availableSlots;
+        if (selectedDate < todayString) return [];
+        
+        const currentHour = String(now.getHours()).padStart(2, '0');
+        const currentMinute = String(now.getMinutes()).padStart(2, '0');
+        const currentTimeStr = `${currentHour}:${currentMinute}`;
+        
+        return availableSlots.filter(slot => slot.substring(0, 5) > currentTimeStr);
+    };
+
+    const validSlots = getValidSlots();
+
     return (
         <div className={styles.modalOverlay} onClick={onClose}>
             <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
@@ -120,24 +135,25 @@ function AdminBookingModal({ isOpen, onClose, onSave }) {
                     <input 
                         type="date" 
                         value={selectedDate} 
+                        min={new Date().toISOString().split('T')[0]} 
                         onChange={e => setSelectedDate(e.target.value)}
                     />
-                    
+
                     <div className={styles.timeSlotsContainer}> 
                     {isLoadingSlots ? (
                         <p>Загрузка слотов...</p>
-                    ) : availableSlots.length > 0 ? (
-                        availableSlots.map(slot => (
+                    ) : validSlots.length > 0 ? (  /* ЗАМЕНИЛИ availableSlots на validSlots */
+                        validSlots.map(slot => (
                             <button 
                                 key={slot}
                                 onClick={() => setSelectedSlot(slot)} 
                                 className={`${styles.timeSlotButton} ${selectedSlot === slot ? styles.selected : ''}`}
                             >
-                                {slot}
+                                {slot.substring(0, 5)}
                             </button>
                         ))
                     ) : (
-                        <p>(Нет доступных слотов на эту дату)</p>
+                        <p>(Нет свободных слотов)</p>
                     )}
                 </div>
                 </div>

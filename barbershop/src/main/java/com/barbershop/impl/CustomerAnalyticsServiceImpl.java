@@ -1,6 +1,7 @@
 package com.barbershop.impl;
 
 import com.barbershop.dto.report.CustomerKpiDto;
+import com.barbershop.model.BookingStatus;
 import com.barbershop.model.ClientInteraction;
 import com.barbershop.model.Timetable;
 import com.barbershop.model.User;
@@ -32,7 +33,6 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
         this.userRepository = userRepository;
     }
 
-    // --- Метод для поиска последних статусов взаимодействия по каждому юзеру ---
     private Map<Long, ClientInteraction> getLatestInteractions() {
         List<ClientInteraction> allInteractions = interactionRepository.findAll();
         Map<Long, ClientInteraction> latest = new HashMap<>();
@@ -43,6 +43,16 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
             }
         }
         return latest;
+    }
+
+    private Set<Long> getUsersWithUpcomingAppointments() {
+        LocalDateTime now = LocalDateTime.now();
+        return timetableRepository.findAll().stream()
+                .filter(t -> t.getAppointmentTime() != null && t.getAppointmentTime().isAfter(now))
+                .filter(t -> t.getStatus() == BookingStatus.BOOKED)
+                .filter(t -> t.getBookedBy() != null)
+                .map(t -> t.getBookedBy().getId())
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -59,6 +69,8 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
                 .collect(Collectors.groupingBy(v -> v.getBookedBy().getId()));
 
         Map<Long, ClientInteraction> latestInteractions = getLatestInteractions();
+
+        Set<Long> upcomingUsers = getUsersWithUpcomingAppointments();
 
         double currentPeriodRevenue = 0.0, prevPeriodRevenue = 0.0;
         Set<Long> currentPeriodUsers = new HashSet<>(), prevPeriodUsers = new HashSet<>();
@@ -89,24 +101,28 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
                 if (v.getAppointmentTime().isBefore(start)) lastVisitBeforeStart = v;
             }
 
-            // --- Расчет Оттока (Churn Rate) ---
             if (lastVisitBeforeStart != null) {
                 long daysSinceLastBeforeStart = ChronoUnit.DAYS.between(lastVisitBeforeStart.getAppointmentTime(), start);
                 if (daysSinceLastBeforeStart <= 60) {
                     activeAtStartOfPeriod++;
                     if (lastVisitBeforeEnd != null && ChronoUnit.DAYS.between(lastVisitBeforeEnd.getAppointmentTime(), end) > 60) {
-                        churnedDuringPeriod++;
+                        if (!upcomingUsers.contains(userId)) {
+                            churnedDuringPeriod++;
+                        }
                     }
                 }
             }
 
-            // --- Сегментация базы с учетом истории БД ---
             if (lastVisitBeforeEnd != null) {
                 ClientInteraction latestAction = latestInteractions.get(userId);
                 long daysSinceLastVisit = ChronoUnit.DAYS.between(lastVisitBeforeEnd.getAppointmentTime(), end);
 
-                // Если в БД клиент помечен как отток — он сразу попадает в красную долю круговой диаграммы
-                if (latestAction != null && "CHURNED".equals(latestAction.getStatus())) {
+                boolean hasUpcoming = upcomingUsers.contains(userId);
+
+                if (hasUpcoming) {
+                    if (totalVisitsBeforeEnd == 1) newClients++;
+                    else activeClients++;
+                } else if (latestAction != null && "CHURNED".equals(latestAction.getStatus())) {
                     churned++;
                 } else if (daysSinceLastVisit > 120) {
                     churned++;
@@ -133,8 +149,6 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
         kpiDto.setAtRiskClientsSegment(atRiskSegment);
         kpiDto.setChurnedClients(churned);
 
-        // Динамику (графики) оставляем как было (генерация дат и точек)...
-        // (Сохрани свой код цикла для dynamicsDates, dynamicsLtv, dynamicsChurnRate из предыдущего ответа)
         List<String> dates = new ArrayList<>();
         List<Double> ltvDynamics = new ArrayList<>();
         List<Double> churnDynamics = new ArrayList<>();
@@ -177,13 +191,14 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
                 .collect(Collectors.groupingBy(v -> v.getBookedBy().getId()));
 
         Map<Long, ClientInteraction> latestInteractions = getLatestInteractions();
+        Set<Long> upcomingUsers = getUsersWithUpcomingAppointments();
+
         List<com.barbershop.dto.report.AtRiskClientDto> allClientsTable = new ArrayList<>();
 
         for (Map.Entry<Long, List<Timetable>> entry : visitsByUser.entrySet()) {
             Long userId = entry.getKey();
             ClientInteraction latestAction = latestInteractions.get(userId);
 
-            // Если клиент уже окончательно ушел — скрываем его
             if (latestAction != null && "CHURNED".equals(latestAction.getStatus())) {
                 continue;
             }
@@ -195,9 +210,10 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
 
             double ltv = userVisits.stream().mapToDouble(v -> v.getService().getPrice()).sum();
 
-            // Расчет риска: >=50% это зона риска, <50% это безопасная зона
             int probability;
-            if (daysSinceLastVisit > 60) {
+            if (upcomingUsers.contains(userId)) {
+                probability = 0;
+            } else if (daysSinceLastVisit > 60) {
                 probability = (int) Math.min(99, 50 + (daysSinceLastVisit - 60) * 0.8);
             } else {
                 probability = (int) Math.max(0, (daysSinceLastVisit / 60.0) * 49);
@@ -217,7 +233,6 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
             allClientsTable.add(dto);
         }
 
-        // Сортируем: сначала самые горящие по оттоку, затем по LTV
         allClientsTable.sort(Comparator.comparing(com.barbershop.dto.report.AtRiskClientDto::getChurnProbability).reversed()
                 .thenComparing(Comparator.comparing(com.barbershop.dto.report.AtRiskClientDto::getLtv).reversed()));
         return allClientsTable;
@@ -227,7 +242,7 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
     public List<com.barbershop.dto.report.VisitHistoryDto> getClientHistory(Long clientId) {
         List<Timetable> visits = timetableRepository.findAllCompletedInPeriod(LocalDateTime.of(2000, 1, 1, 0, 0), LocalDateTime.now())
                 .stream().filter(t -> t.getBookedBy() != null && t.getBookedBy().getId().equals(clientId))
-                .sorted(Comparator.comparing(Timetable::getAppointmentTime).reversed()) // Самые новые сверху
+                .sorted(Comparator.comparing(Timetable::getAppointmentTime).reversed())
                 .collect(Collectors.toList());
 
         return visits.stream().map(v -> {
@@ -246,8 +261,6 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
         }).collect(Collectors.toList());
     }
 
-    // --- НОВЫЕ МЕТОДЫ ДЛЯ ИСТОРИИ ВЗАИМОДЕЙСТВИЙ ---
-
     @Override
     public void saveContactResult(Long clientId, com.barbershop.dto.report.ContactResultDto resultDto) {
         User client = userRepository.findById(clientId).orElseThrow(() -> new RuntimeException("Клиент не найден"));
@@ -263,7 +276,6 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
 
     @Override
     public List<com.barbershop.dto.report.InteractionDto> getRecentInteractions() {
-        // Берем последние 50 записей из БД
         return interactionRepository.findAllByOrderByInteractionDateDesc().stream()
                 .limit(50)
                 .map(ci -> {
@@ -276,6 +288,7 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
                     return dto;
                 }).collect(Collectors.toList());
     }
+
     @Override
     public com.barbershop.dto.report.ClientActionDto getClientActionData(Long clientId) {
         LocalDateTime now = LocalDateTime.now();
@@ -292,8 +305,7 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
 
         com.barbershop.model.User client = clientVisits.get(0).getBookedBy();
         String name = client.getName() != null ? client.getName() : "Клиент #" + clientId;
-        String contactInfo = client.getUsername() != null ? client.getUsername() :
-                (client.getUsername() != null ? client.getUsername() : "Нет контактов");
+        String contactInfo = client.getUsername() != null ? client.getUsername() : "Нет контактов";
 
         double ltv = clientVisits.stream().mapToDouble(v -> v.getService().getPrice()).sum();
 
@@ -307,27 +319,27 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
                 .collect(Collectors.groupingBy(v -> v.getService().getName(), Collectors.counting()));
         String favService = serviceCounts.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse("Любая услуга");
 
-        // --- ОБНОВЛЕННАЯ ЛОГИКА ТЕКСТА ---
+        Set<Long> upcomingUsers = getUsersWithUpcomingAppointments();
+        boolean hasUpcoming = upcomingUsers.contains(clientId);
+
         String recommendation = "";
         Timetable lastVisit = clientVisits.get(clientVisits.size() - 1);
         long recency = ChronoUnit.DAYS.between(lastVisit.getAppointmentTime(), now);
 
-        if (clientVisits.size() == 1) {
+        if (hasUpcoming) {
+            recommendation = "У клиента уже есть предстоящая запись. Дополнительных действий не требуется.";
+        } else if (clientVisits.size() == 1) {
             recommendation = "Уточнить качество услуги после первого визита.";
         } else {
-            Timetable firstVisit = clientVisits.get(0);
-            long totalDaysSinceFirstVisit = ChronoUnit.DAYS.between(firstVisit.getAppointmentTime(), lastVisit.getAppointmentTime());
-
+            long totalDaysSinceFirstVisit = ChronoUnit.DAYS.between(clientVisits.get(0).getAppointmentTime(), lastVisit.getAppointmentTime());
             double n = totalDaysSinceFirstVisit > 0 ? (double) totalDaysSinceFirstVisit / (clientVisits.size() - 1) : 30.0;
             boolean isAtRisk = recency > (n * 1.5) || recency > 60;
             double HIGH_LTV_THRESHOLD = 200.0;
 
             if (isAtRisk) {
                 if (ltv >= HIGH_LTV_THRESHOLD) {
-                    // Убраны скобки, размер скидки и слова про VIP/звонок
                     recommendation = String.format("Связаться с клиентом. Предложить персональную скидку на %s у мастера %s.", favService, favMaster);
                 } else {
-                    // Убраны проценты и статус
                     recommendation = "Отправить сообщение в мессенджер с напоминанием о визите и небольшим бонусом.";
                 }
             } else {
