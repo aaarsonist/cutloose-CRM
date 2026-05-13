@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,7 +40,14 @@ public class ReviewServiceImpl implements ReviewService {
                 .orElseThrow(() -> new RuntimeException("Запись расписания с ID " + appointmentId + " не найдена."));
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentUsername = authentication.getName();
+        String currentUsername;
+
+        if (authentication.getPrincipal() instanceof OAuth2User) {
+            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+            currentUsername = oauth2User.getAttribute("email");
+        } else {
+            currentUsername = authentication.getName();
+        }
 
         if (appointment.getAppointmentTime().isAfter(LocalDateTime.now())) {
             throw new RuntimeException("Нельзя оставить отзыв на предстоящую запись.");

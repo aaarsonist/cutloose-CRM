@@ -105,8 +105,14 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
                 long daysSinceLastBeforeStart = ChronoUnit.DAYS.between(lastVisitBeforeStart.getAppointmentTime(), start);
                 if (daysSinceLastBeforeStart <= 60) {
                     activeAtStartOfPeriod++;
-                    if (lastVisitBeforeEnd != null && ChronoUnit.DAYS.between(lastVisitBeforeEnd.getAppointmentTime(), end) > 60) {
-                        if (!upcomingUsers.contains(userId)) {
+
+                    ClientInteraction latestAction = latestInteractions.get(userId);
+                    boolean isManuallyChurned = latestAction != null
+                            && "CHURNED".equals(latestAction.getStatus())
+                            && !latestAction.getInteractionDate().isAfter(end);
+
+                    if (!upcomingUsers.contains(userId)) {
+                        if (isManuallyChurned || (lastVisitBeforeEnd != null && ChronoUnit.DAYS.between(lastVisitBeforeEnd.getAppointmentTime(), end) > 60)) {
                             churnedDuringPeriod++;
                         }
                     }
@@ -122,7 +128,7 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
                 if (hasUpcoming) {
                     if (totalVisitsBeforeEnd == 1) newClients++;
                     else activeClients++;
-                } else if (latestAction != null && "CHURNED".equals(latestAction.getStatus())) {
+                } else if (latestAction != null && "CHURNED".equals(latestAction.getStatus()) && !latestAction.getInteractionDate().isAfter(end)) {
                     churned++;
                 } else if (daysSinceLastVisit > 120) {
                     churned++;
@@ -158,7 +164,10 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
             LocalDateTime currEnd = curr.atTime(23, 59, 59);
             double totalRevUpToDate = 0; int uniqueUsersUpToDate = 0; int riskUsersAtDate = 0;
 
-            for (List<Timetable> userVisits : visitsByUser.values()) {
+            for (Map.Entry<Long, List<Timetable>> userEntry : visitsByUser.entrySet()) {
+                Long uid = userEntry.getKey();
+                List<Timetable> userVisits = userEntry.getValue();
+
                 Timetable lastV = null;
                 double userSpent = 0;
                 for (Timetable v : userVisits) {
@@ -166,9 +175,18 @@ public class CustomerAnalyticsServiceImpl implements CustomerAnalyticsService {
                         lastV = v; userSpent += v.getService().getPrice();
                     }
                 }
+
                 if (lastV != null) {
                     uniqueUsersUpToDate++; totalRevUpToDate += userSpent;
-                    if (ChronoUnit.DAYS.between(lastV.getAppointmentTime(), currEnd) > 60) riskUsersAtDate++;
+
+                    ClientInteraction action = latestInteractions.get(uid);
+                    boolean isManuallyChurned = action != null
+                            && "CHURNED".equals(action.getStatus())
+                            && !action.getInteractionDate().isAfter(currEnd);
+
+                    if (isManuallyChurned || ChronoUnit.DAYS.between(lastV.getAppointmentTime(), currEnd) > 60) {
+                        riskUsersAtDate++;
+                    }
                 }
             }
             dates.add(curr.format(DateTimeFormatter.ISO_DATE));
